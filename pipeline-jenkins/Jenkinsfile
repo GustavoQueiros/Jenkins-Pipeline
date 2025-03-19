@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    environment {
+        REPO_URL = 'https://github.com/GustavoQueiros/Jenkins-Pipeline'
+        APP_NAME = "pipeline-jenkis"
+        DOCKER_IMAGE = "pipeline-jenkis-image"
+        CONTAINER_NAME = "pipeline-jenkis-container"
+        PORT = "8080"
+    }
+
+    stages {
+        stage('Checkout do Código') {
+            steps {
+                git REPO_URL
+            }
+        }
+
+        stage('Compilação com Maven') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Execução de Testes') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Construção da Imagem Docker') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE .'
+            }
+        }
+
+        stage('Parando Container Antigo') {
+            steps {
+                sh 'docker stop $CONTAINER_NAME || true'
+                sh 'docker rm $CONTAINER_NAME || true'
+            }
+        }
+
+        stage('Executando Novo Container') {
+            steps {
+                sh 'docker run -d --name $CONTAINER_NAME -p $PORT:$PORT $DOCKER_IMAGE'
+            }
+        }
+    }
+}
